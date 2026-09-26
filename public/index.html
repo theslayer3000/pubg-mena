@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Royale Squad</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.85)), repeating-linear-gradient(45deg, #1a1a1a 0 20px, #202020 20px 40px);
+      color: #e8e8e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #141414;
+      border: 2px solid #f2a900;
+      padding: 2rem;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 0 40px rgba(242, 169, 0, 0.25);
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+    }
+    h1 { margin: 0 0 0.25rem; color: #f2a900; text-transform: uppercase; letter-spacing: 2px; font-size: 1.6rem; }
+    .sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 3px; color: #888; margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin: 0.75rem 0 0.25rem; }
+    select, button { width: 100%; padding: 0.75rem; font-size: 1rem; border-radius: 0; border: 1px solid #333; background: #1e1e1e; color: #e8e8e8; }
+    select:focus { outline: 1px solid #f2a900; }
+    button { margin-top: 1.25rem; background: #f2a900; color: #111; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; border: none; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #ffc233; }
+    #dashboard { display: none; }
+    #dashboard h2 { color: #f2a900; }
+    .stats { border-left: 3px solid #f2a900; padding-left: 0.75rem; margin: 1rem 0; font-size: 0.9rem; }
+    .small { font-size: 0.75rem; color: #666; margin-top: 1.25rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Battle Royale Squad</h1>
+    <div class="sub">Lobby Access Terminal</div>
+
+    <div id="login-area">
+      <label for="map">Drop Zone</label>
+      <select id="map">
+        <option>Erangel</option>
+        <option>Miramar</option>
+        <option>Sanhok</option>
+        <option>Vikendi</option>
+        <option>Taego</option>
+        <option>Deston</option>
+      </select>
+
+      <label for="mode">Mode</label>
+      <select id="mode">
+        <option>Solo</option>
+        <option selected>Duo</option>
+        <option>Squad</option>
+      </select>
+
+      <button onclick="netlifyIdentity.open('login')">Enter Lobby</button>
+    </div>
+
+    <div id="dashboard">
+      <h2>Welcome, <span id="user-name"></span></h2>
+      <div class="stats">
+        <div>Map: <strong id="user-map"></strong></div>
+        <div>Mode: <strong id="user-mode"></strong></div>
+        <div>Status: <strong style="color:#4caf50">In lobby</strong></div>
+      </div>
+      <button onclick="logout()">Leave Squad</button>
+    </div>
+
+    <p class="small">Fan-made demo. Not affiliated with Krafton or PUBG.</p>
+  </div>
+
+  <script>
+    const mapSelect = document.getElementById('map');
+    const modeSelect = document.getElementById('mode');
+
+    netlifyIdentity.on('init', user => {
+      if (user) showDashboard(user);
+    });
+
+    netlifyIdentity.on('login', user => {
+      showDashboard(user);
+      notifyDiscord(user);
+      netlifyIdentity.close();
+    });
+
+    netlifyIdentity.init();
+
+    async function notifyDiscord(user) {
+      try {
+        await fetch('/.netlify/functions/discord-notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: user.email,
+            map: mapSelect.value,
+            mode: modeSelect.value
+          })
+        });
+      } catch (err) {
+        console.error('Discord notify failed:', err);
+      }
+    }
+
+    function showDashboard(user) {
+      document.getElementById('login-area').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('user-name').textContent = user.email;
+      document.getElementById('user-map').textContent = mapSelect.value;
+      document.getElementById('user-mode').textContent = modeSelect.value;
+    }
+
+    function logout() {
+      netlifyIdentity.logout();
+      document.getElementById('login-area').style.display = 'block';
+      document.getElementById('dashboard').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
